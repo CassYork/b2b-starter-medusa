@@ -5,6 +5,9 @@ const { loadEnv, defineConfig, Modules } = require("@medusajs/framework/utils");
 loadEnv(process.env.NODE_ENV, process.cwd());
 
 module.exports = defineConfig({
+  admin: {
+    backendUrl: process.env.MEDUSA_BACKEND_URL || "http://localhost:9000"
+  },
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
     http: {
@@ -14,6 +17,7 @@ module.exports = defineConfig({
       jwtSecret: process.env.JWT_SECRET || "supersecret",
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
     },
+    
   },
   modules: {
     companyModuleService: {
