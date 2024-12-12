@@ -1,6 +1,7 @@
 export const cartFields = [
   "id",
   "*items",
+  "*rent_items",
   "*customer",
   "*company",
   "*region",

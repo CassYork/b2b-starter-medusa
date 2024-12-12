@@ -41,9 +41,11 @@ export const getPricesForVariant = (variant: any): VariantPrice | null => {
 export function getProductPrice({
   product,
   variantId,
+  duration = null
 }: {
   product: HttpTypes.StoreProduct
   variantId?: string
+  duration?: string | null
 }) {
   if (!product || !product.id) {
     throw new Error("No product provided")
@@ -82,9 +84,51 @@ export function getProductPrice({
     return getPricesForVariant(variant)
   }
 
+  const rentPrice = () => {
+    if (!product || !variantId || !duration) {
+      return null
+    }
+
+    const variant: any = product.variants?.find(
+      (v) => v.id === variantId || v.sku === variantId
+    )
+
+    if (!variant) {
+      return null
+    }
+
+    const rentalPrice: any = variant?.rental_prices?.find(
+      (rent: any) => rent.duration === duration
+    )
+
+    if(!rentalPrice) {
+      return null
+    }
+
+    return {
+      calculated_price_number: rentalPrice?.price,
+      calculated_price: convertToLocale({
+        amount: rentalPrice?.price,
+        currency_code: variant.calculated_price.currency_code,
+      }),
+      original_price_number: rentalPrice?.price,
+      original_price: convertToLocale({
+        amount: rentalPrice?.price,
+        currency_code: variant.calculated_price.currency_code,
+      }),
+      currency_code: variant.calculated_price.currency_code,
+      price_type: variant.calculated_price.calculated_price.price_list_type,
+      percentage_diff: getPercentageDiff(
+        rentalPrice?.price,
+        rentalPrice?.price
+      ),
+    }
+  }
+
   return {
     product,
     cheapestPrice: cheapestPrice(),
     variantPrice: variantPrice(),
+    rentPrice: rentPrice()
   }
 }

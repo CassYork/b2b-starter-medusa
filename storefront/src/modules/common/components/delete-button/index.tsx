@@ -5,18 +5,26 @@ import { useState } from "react"
 
 const DeleteButton = ({
   id,
+  for_rent = false,
   className,
 }: {
-  id: string
+  id: string,
+  for_rent?: boolean,
   className?: string
 }) => {
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const { handleDeleteItem } = useCart()
+  const { handleDeleteItem, handleDeleteRentItem } = useCart()
 
   const handleDelete = async (id: string) => {
     setIsDeleting(true)
-    await handleDeleteItem(id)
+
+    if(for_rent) {
+      await handleDeleteRentItem(id)
+    } else {
+      await handleDeleteItem(id)
+    }
+    
   }
 
   return (

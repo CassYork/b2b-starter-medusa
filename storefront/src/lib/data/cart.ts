@@ -18,6 +18,9 @@ import { retrieveCustomer } from "./customer"
 import { getRegion } from "./regions"
 
 export async function retrieveCart() {
+
+  console.log("--> >> retrieveCart...")
+
   const cartId = await getCartId()
 
   if (!cartId) {
@@ -37,18 +40,32 @@ export async function retrieveCart() {
       method: "GET",
       query: {
         fields:
-          "*items, *region, *items.product, *items.variant, +items.thumbnail, +items.metadata, *promotions, *company",
+          "*items, *rent_items, *region, *items.product, *items.variant, +items.thumbnail, +items.metadata, *promotions, *company",
       },
       headers,
       next,
     })
-    .then(({ cart }) => cart as B2BCart)
+    .then(({ cart }) => {
+
+      const _cart = cart as B2BCart
+
+      const totalItems = _cart?.items?.reduce((acc, item) => acc + item.unit_price * item.quantity, 0) || 0
+      const totalRentItems = _cart?.rent_items?.reduce((acc, item) => acc + item.unit_price * item.quantity, 0) || 0
+
+      _cart.item_subtotal = totalItems + totalRentItems
+      _cart.item_total = totalItems + totalRentItems
+      _cart.subtotal = totalItems + totalRentItems
+      _cart.total = totalItems + totalRentItems
+
+      return _cart
+    })
     .catch(() => {
       return null
     })
 }
 
 export async function getOrSetCart(countryCode: string) {
+  console.log("--> >> getOrSetCart...")
   let cart = await retrieveCart()
   const region = await getRegion(countryCode)
   const customer = await retrieveCustomer()
@@ -155,6 +172,7 @@ export async function addToCartBulk({
   lineItems: HttpTypes.StoreAddCartLineItem[]
   countryCode: string
 }) {
+
   const cart = await getOrSetCart(countryCode)
 
   if (!cart) {
@@ -186,6 +204,44 @@ export async function addToCartBulk({
     .catch(medusaError)
 }
 
+export async function addToCartRentBulk({
+  rentItems,
+  countryCode,
+}: {
+  rentItems: any
+  countryCode: string
+}) {
+  const cart = await getOrSetCart(countryCode)
+
+  if (!cart) {
+    throw new Error("Error retrieving or creating cart")
+  }
+
+  const headers = {
+    "Content-Type": "application/json",
+    ...(await getAuthHeaders()),
+  } as Record<string, any>
+
+  if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+  }
+
+  await fetch(
+    `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/carts/${cart.id}/rent-items/bulk`,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ rent_items: rentItems }),
+    }
+  )
+    .then(async () => {
+      const cartCacheTag = await getCacheTag("carts")
+      revalidateTag(cartCacheTag)
+    })
+    .catch(medusaError)
+}
+
 export async function updateLineItem({
   lineId,
   data,
@@ -193,6 +249,7 @@ export async function updateLineItem({
   lineId: string
   data: HttpTypes.StoreUpdateCartLineItem
 }) {
+
   if (!lineId) {
     throw new Error("Missing lineItem ID when updating line item")
   }
@@ -217,6 +274,7 @@ export async function updateLineItem({
 }
 
 export async function deleteLineItem(lineId: string) {
+
   if (!lineId) {
     throw new Error("Missing lineItem ID when deleting line item")
   }
@@ -232,6 +290,42 @@ export async function deleteLineItem(lineId: string) {
 
   await sdk.store.cart
     .deleteLineItem(cartId, lineId, headers)
+    .then(async () => {
+      const cartCacheTag = await getCacheTag("carts")
+      revalidateTag(cartCacheTag)
+    })
+    .catch(medusaError)
+}
+
+export async function deleteRentItem(rentItemId: string) {
+
+  if (!rentItemId) {
+    throw new Error("Missing lineItem ID when deleting line item")
+  }
+
+  const cartId = await getCartId()
+  if (!cartId) {
+    throw new Error("Missing cart ID when deleting line item")
+  }
+
+  const headers = {
+    "Content-Type": "application/json",
+    ...(await getAuthHeaders()),
+  } as Record<string, any>
+
+  if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
+    headers["x-publishable-api-key"] =
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
+  }
+
+  await fetch(
+    `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/store/carts/${cartId}/rent-items/${rentItemId}`,
+    {
+      method: "DELETE",
+      headers,
+      body: null,
+    }
+  )
     .then(async () => {
       const cartCacheTag = await getCacheTag("carts")
       revalidateTag(cartCacheTag)

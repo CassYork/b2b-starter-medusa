@@ -14,6 +14,7 @@ import { usePathname } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { B2BCustomer } from "types/global"
 import AppliedPromotions from "../applied-promotions"
+import RentItemsTemplate from "@modules/cart/templates/rent-items"
 
 type CartDrawerProps = {
   customer: B2BCustomer | null
@@ -31,11 +32,17 @@ const CartDrawer = ({ customer, ...props }: CartDrawerProps) => {
   const { cart } = useCart()
 
   const items = cart?.items || []
+  const rentItems = cart?.rent_items || []
   const promotions = cart?.promotions || []
 
   const totalItems =
     items?.reduce((acc, item) => {
       return acc + item.quantity
+    }, 0) || 0
+
+  const totalRentItems =
+    rentItems?.reduce((acc, item) => {
+      return acc + item?.quantity
     }, 0) || 0
 
   const subtotal = useMemo(() => cart?.item_total ?? 0, [cart])
@@ -46,6 +53,7 @@ const CartDrawer = ({ customer, ...props }: CartDrawerProps) => {
   )
 
   const itemRef = useRef<number>(totalItems || 0)
+  const rentRef = useRef<number>(totalRentItems || 0)
 
   const timedOpen = () => {
     if (isOpen) {
@@ -78,19 +86,27 @@ const CartDrawer = ({ customer, ...props }: CartDrawerProps) => {
 
   // open cart dropdown when modifying the cart items, but only if we're not on the cart page
   useEffect(() => {
-    if (itemRef.current !== totalItems && !pathname.includes("/cart")) {
+    if ((itemRef.current !== totalItems || rentRef.current !== totalRentItems) && !pathname.includes("/cart")) {
       timedOpen()
       return
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalItems, itemRef.current])
+  }, [totalItems, totalRentItems, itemRef.current])
+
+  useEffect(() => {
+    if (rentRef.current !== totalRentItems && !pathname.includes("/cart")) {
+      timedOpen()
+      return
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalItems, totalRentItems, itemRef.current])
 
   //close cart drawer when navigating to a different page
   useEffect(() => {
     cancelTimer()
     close()
   }, [pathname])
-
+  
   const checkoutStep = cart ? getCheckoutStep(cart) : undefined
   const checkoutPath = customer
     ? checkoutStep
@@ -114,7 +130,7 @@ const CartDrawer = ({ customer, ...props }: CartDrawerProps) => {
           <button className="transition-fg relative inline-flex w-fit items-center justify-center overflow-hidden outline-none txt-compact-small-plus gap-x-1.5 px-3 py-1.5 rounded-full hover:bg-neutral-100">
             <ShoppingBag />
             <span className="text-sm font-normal hidden small:inline-block">
-              {cart && items && items.length > 0
+              {cart && ((items && items.length > 0) || (rentItems && rentItems.length > 0 ))
                 ? convertToLocale({
                     amount: subtotal,
                     currency_code: cart.currency_code,
@@ -122,7 +138,7 @@ const CartDrawer = ({ customer, ...props }: CartDrawerProps) => {
                 : "Cart"}
             </span>
             <div className="bg-blue-500 text-white text-xs px-1.5 py-px rounded-full">
-              {totalItems}
+              {totalItems + totalRentItems}
             </div>
           </button>
         </Drawer.Trigger>
@@ -133,7 +149,7 @@ const CartDrawer = ({ customer, ...props }: CartDrawerProps) => {
           <Drawer.Header className="flex self-center">
             <Drawer.Title>
               {totalItems > 0
-                ? `You have ${totalItems} items in your cart`
+                ? `You have ${totalItems} Buy items and ${totalRentItems} for Rent items in your cart`
                 : "Your cart is empty"}
             </Drawer.Title>
           </Drawer.Header>
@@ -142,14 +158,25 @@ const CartDrawer = ({ customer, ...props }: CartDrawerProps) => {
               <AppliedPromotions promotions={promotions} />
             </div>
           )}
-          <div className="flex flex-col gap-y-4 h-full self-stretch justify-between">
+          <div className="flex flex-col gap-y-4 h-full">
             {cart && cart.items && (
               <>
-                <ItemsTemplate
-                  cart={cart}
-                  showBorders={false}
-                  showTotal={false}
-                />
+                <div className="flex flex-col flex-1 overflow-y-auto">
+                  <ItemsTemplate
+                    cart={cart}
+                    showBorders={false}
+                    showTotal={false}
+                  />
+
+                  {cart?.rent_items.length > 0 && (
+                    <RentItemsTemplate
+                      cart={cart}
+                      showBorders={false}
+                      showTotal={false}
+                    />
+                  )}
+                </div>
+
                 <div className="flex flex-col gap-y-3 w-full p-4">
                   <div className="flex justify-between">
                     <Text>Subtotal</Text>

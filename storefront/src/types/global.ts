@@ -1,4 +1,4 @@
-import { HttpTypes } from "@medusajs/types"
+import { HttpTypes, StoreCartLineItem } from "@medusajs/types"
 import { QueryCompany, QueryEmployee } from "@starter/types"
 
 export enum SpendingLimitResetFrequency {
@@ -12,6 +12,7 @@ export enum SpendingLimitResetFrequency {
 export interface B2BCart extends HttpTypes.StoreCart {
   company: QueryCompany
   promotions?: HttpTypes.StorePromotion[]
+  rent_items: any[]
 }
 
 export interface B2BOrder extends HttpTypes.StoreOrder {

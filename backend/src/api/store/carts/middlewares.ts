@@ -7,6 +7,7 @@ import { retrieveCartTransformQueryConfig } from "./query-config";
 import {
   GetCartLineItemsBulkParams,
   StoreAddLineItemsBulk,
+  StoreAddRentItemsBulk,
 } from "./validators";
 
 export const storeCartsMiddlewares: MiddlewareRoute[] = [
@@ -20,5 +21,20 @@ export const storeCartsMiddlewares: MiddlewareRoute[] = [
         retrieveCartTransformQueryConfig
       ),
     ],
+  },
+  {
+    method: ["POST"],
+    matcher: "/store/carts/:id/rent-items/bulk",
+    middlewares: [
+      validateAndTransformBody(StoreAddRentItemsBulk),
+      validateAndTransformQuery(
+        GetCartLineItemsBulkParams,
+        retrieveCartTransformQueryConfig
+      ),
+    ],
+  },
+  {
+    method: ["DELETE"],
+    matcher: "/store/carts/:id/rent-items/:item"
   },
 ];

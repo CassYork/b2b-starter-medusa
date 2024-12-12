@@ -1,20 +1,37 @@
 import { addToCartEventBus } from "@lib/data/cart-event-bus"
 import { getProductPrice } from "@lib/util/get-product-price"
 import { HttpTypes, StoreProduct, StoreProductVariant } from "@medusajs/types"
-import { clx, Table } from "@medusajs/ui"
+import { clx, DatePicker, Select, Table, Text } from "@medusajs/ui"
 import Button from "@modules/common/components/button"
 import ShoppingBag from "@modules/common/icons/shopping-bag"
 import { useState } from "react"
 import BulkTableQuantity from "../bulk-table-quantity"
 
-const ProductVariantsTable = ({
+const durationOptions = [
+  {
+    id: "pt001",
+    duration: "1 day"
+  },
+  {
+    id: "pt002",
+    duration: "1 week"
+  },
+  {
+    id: "pt003",
+    duration: "2 weeks"
+  },
+  {
+    id: "pt004",
+    duration: "1 month"
+  },
+]
+const ProductRentVariantsTable = ({
   product,
   region,
 }: {
   product: HttpTypes.StoreProduct
   region: HttpTypes.StoreRegion
 }) => {
-
   const [isAdding, setIsAdding] = useState(false)
   const [lineItemsMap, setLineItemsMap] = useState<
     Map<
@@ -25,6 +42,11 @@ const ProductVariantsTable = ({
       }
     >
   >(new Map())
+
+  const [duration, setDuration] = useState<string | undefined>(
+    durationOptions[0].duration
+  )
+  const [rentDate, setRentDate] = useState<Date | null>(null)
 
   const totalQuantity = Array.from(lineItemsMap.values()).reduce(
     (acc, curr) => acc + curr.quantity,
@@ -52,21 +74,42 @@ const ProductVariantsTable = ({
     })
   }
 
+  const handleDurationChange = (value: string) => setDuration(value)
+
+  const handleDateChange = (value: Date | null) => {
+    if(value) {
+        setRentDate(value)
+    }
+  }
+
   const handleAddToCart = async () => {
     setIsAdding(true)
 
     const lineItems = Array.from(lineItemsMap.entries()).map(
-      ([variantId, { quantity, ...variant }]) => ({
-        productVariant: {
-          ...variant,
-        },
-        quantity,
-      })
+      ([variantId, { quantity, ...variant }]) => {
+
+        const productVariant = {...variant} as StoreProductVariant & {
+          product: StoreProduct,
+          rental_prices: any[]
+        }
+
+        const rentPrice = productVariant?.rental_prices?.find(
+            (v: any) => v?.duration === duration
+        )
+
+        return {
+            productVariant,
+            quantity,
+            duration: duration as string,
+            rentDate: rentDate as Date,
+            rentPrice: rentPrice?.price as number
+        }
+      }
     )
 
-    addToCartEventBus.emitCartAdd({
+    addToCartEventBus.emitRentCartAdd({
       lineItems,
-      regionId: region.id,
+      regionId: region.id
     })
 
     setIsAdding(false)
@@ -79,6 +122,7 @@ const ProductVariantsTable = ({
           <Table.Header className="border-t-0">
             <Table.Row className="bg-neutral-100 border-none hover:!bg-neutral-100">
               <Table.HeaderCell className="px-4">SKU</Table.HeaderCell>
+
               {product.options?.map((option) => {
                 if (option.title === "Default option") {
                   return null
@@ -89,17 +133,33 @@ const ProductVariantsTable = ({
                   </Table.HeaderCell>
                 )
               })}
+
               <Table.HeaderCell className="px-4 border-x">
                 Price
               </Table.HeaderCell>
+
+              <Table.HeaderCell className="px-4 border-x">
+                Duration
+              </Table.HeaderCell>
+
               <Table.HeaderCell className="px-4">Quantity</Table.HeaderCell>
             </Table.Row>
           </Table.Header>
           <Table.Body className="border-none">
-            {product.variants?.map((variant, index) => {
-              const { variantPrice } = getProductPrice({
+            {product.variants?.map((variant: any, index) => {
+
+              const rentPrice = variant?.rental_prices?.find(
+                (v: any) => v.duration === duration
+              )
+
+              if(!rentPrice) {
+                return null
+              }
+
+              const { rentPrice: rentalPrice } = getProductPrice({
                 product,
                 variantId: variant.id,
+                duration,
               })
 
               return (
@@ -110,7 +170,8 @@ const ProductVariantsTable = ({
                   })}
                 >
                   <Table.Cell className="px-4">{variant.sku}</Table.Cell>
-                  {variant.options?.map((option, index) => {
+
+                  {variant.options?.map((option: any, index: number) => {
                     if (option.value === "Default option value") {
                       return null
                     }
@@ -120,9 +181,15 @@ const ProductVariantsTable = ({
                       </Table.Cell>
                     )
                   })}
+
                   <Table.Cell className="px-4 border-x">
-                    {variantPrice?.calculated_price}
+                    {rentalPrice?.calculated_price}
                   </Table.Cell>
+
+                  <Table.Cell className="px-4 border-x">
+                    {rentPrice?.duration}
+                  </Table.Cell>
+
                   <Table.Cell className="pl-1 !pr-1">
                     <BulkTableQuantity
                       variantId={variant.id}
@@ -135,12 +202,30 @@ const ProductVariantsTable = ({
           </Table.Body>
         </Table>
       </div>
+
+      <Text className="font-medium text-xl">Booking Details</Text>
+
+      <Select onValueChange={handleDurationChange} value={duration}>
+        <Select.Trigger>
+          <Select.Value placeholder="Placeholder" />
+        </Select.Trigger>
+        <Select.Content>
+          {durationOptions.map((item) => (
+            <Select.Item key={item.id} value={item.duration}>
+              {item.duration}
+            </Select.Item>
+          ))}
+        </Select.Content>
+      </Select>
+
+      <DatePicker size="base" modal={false} onChange={handleDateChange} />
+
       <Button
         onClick={handleAddToCart}
         variant="primary"
         className="w-full h-10"
         isLoading={isAdding}
-        disabled={totalQuantity === 0}
+        disabled={totalQuantity === 0 || !rentDate}
         data-testid="add-product-button"
       >
         <ShoppingBag
@@ -155,4 +240,4 @@ const ProductVariantsTable = ({
   )
 }
 
-export default ProductVariantsTable
+export default ProductRentVariantsTable

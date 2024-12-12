@@ -1,4 +1,5 @@
 const { QUOTE_MODULE } = require("./src/modules/quote");
+const { RENT_MODULE } = require("./src/modules/rent");
 const { loadEnv, defineConfig, Modules } = require("@medusajs/framework/utils");
 
 loadEnv(process.env.NODE_ENV, process.cwd());
@@ -20,6 +21,9 @@ module.exports = defineConfig({
     },
     [QUOTE_MODULE]: {
       resolve: "./modules/quote",
+    },
+    [RENT_MODULE]: {
+      resolve: "./modules/rent",
     },
     [Modules.CACHE]: {
       resolve: "@medusajs/medusa/cache-inmemory",

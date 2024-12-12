@@ -23,7 +23,7 @@ export type ActionGroup = {
   actions: Action[];
 };
 
-type ActionMenuProps = {
+export type ActionMenuProps = {
   groups: ActionGroup[];
 };
 

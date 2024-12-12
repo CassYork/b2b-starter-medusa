@@ -24,6 +24,11 @@ const CartTemplate = ({ customer }: { customer: B2BCustomer | null }) => {
     [cart?.items]
   )
 
+  const totalRentItems = useMemo(
+    () => cart?.rent_items?.reduce((acc, item) => acc + item.quantity, 0) || 0,
+    [cart?.rent_items]
+  )
+
   return (
     <div className="small:py-12 py-6 bg-neutral-100">
       <div className="content-container" data-testid="cart-container">
@@ -32,9 +37,10 @@ const CartTemplate = ({ customer }: { customer: B2BCustomer | null }) => {
             <div className="flex flex-col py-6 gap-y-6">
               <div className="pb-3 flex items-center">
                 <Heading className="text-neutral-950">
-                  You have {totalItems} items in your cart
+                  You have {totalItems} buy items and {totalRentItems} for rent items in your cart
                 </Heading>
               </div>
+
               <div className="grid grid-cols-1 small:grid-cols-[1fr_360px] gap-2">
                 <div className="flex flex-col gap-y-2">
                   {!customer && <SignInPrompt />}
