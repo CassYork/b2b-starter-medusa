@@ -11,7 +11,7 @@ import Button from "@modules/common/components/button"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import ShoppingBag from "@modules/common/icons/shopping-bag"
 import { usePathname } from "next/navigation"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { B2BCustomer } from "types/global"
 import AppliedPromotions from "../applied-promotions"
 import RentItemsTemplate from "@modules/cart/templates/rent-items"
@@ -78,11 +78,11 @@ const CartDrawer = ({ customer, ...props }: CartDrawerProps) => {
 
   const pathname = usePathname()
 
-  const cancelTimer = () => {
+  const cancelTimer = useCallback(() => {
     if (activeTimer) {
       clearTimeout(activeTimer)
     }
-  }
+  }, [activeTimer])
 
   // open cart dropdown when modifying the cart items, but only if we're not on the cart page
   useEffect(() => {
@@ -105,7 +105,7 @@ const CartDrawer = ({ customer, ...props }: CartDrawerProps) => {
   useEffect(() => {
     cancelTimer()
     close()
-  }, [pathname])
+  }, [pathname, cancelTimer])
   
   const checkoutStep = cart ? getCheckoutStep(cart) : undefined
   const checkoutPath = customer
