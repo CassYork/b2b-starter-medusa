@@ -7,6 +7,14 @@ checkEnvVariables()
  */
 const nextConfig = {
   reactStrictMode: true,
+  logging: {
+    fetches: {
+      fullUrl: true,
+    },
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -28,14 +36,7 @@ const nextConfig = {
         protocol: "https",
         hostname: "medusa-server-testing.s3.us-east-1.amazonaws.com",
       },
-      {
-        protocol: "https",
-        hostname: "github.com",
-      },
     ],
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
   },
 }
 
