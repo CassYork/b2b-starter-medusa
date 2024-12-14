@@ -28,6 +28,7 @@ async function fetchRegions(cacheId: string) {
   console.log('Response Headers:', response.headers);
 
   if (!response.ok) {
+    console.error('Error Response:', await response.text());
     throw new Error(`API Error: ${response.statusText}`);
   }
   return response.json()
