@@ -47,6 +47,8 @@ async function getRegionMap(cacheId: string) {
     //   return json
     // })
 
+    console.log("fetching regions url >> ", `${BACKEND_URL}/store/regions`)
+
     const res = await fetch(`${BACKEND_URL}/store/regions`, {
       headers: {
         "x-publishable-api-key": PUBLISHABLE_API_KEY!,
@@ -58,7 +60,10 @@ async function getRegionMap(cacheId: string) {
       cache: "force-cache",
     })
 
+
     console.log("fetch regions Response >> ", res)
+
+    console.log("Response Type >> ", typeof res)
 
     const { regions } = await res.json()
 
