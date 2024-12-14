@@ -10,64 +10,34 @@ const regionMapCache = {
   regionMapUpdated: Date.now(),
 }
 
+async function fetchRegions(cacheId: string) {
+  // Fetch regions from Medusa. We can't use the JS client here because middleware is running on Edge and the client needs a Node environment.
+  const response = await fetch(`${BACKEND_URL}/store/regions`, {
+    headers: {
+      "x-publishable-api-key": PUBLISHABLE_API_KEY!,
+    },
+    next: {
+      revalidate: 3600,
+      tags: [`regions-${cacheId}`],
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch regions data: ${response.statusText}`);
+  }
+
+  return response.json()
+}
+
 async function getRegionMap(cacheId: string) {
   const { regionMap, regionMapUpdated } = regionMapCache
-
-  if (!BACKEND_URL) {
-    throw new Error(
-      "Middleware.ts: Error fetching regions. Did you set up regions in your Medusa Admin and define a MEDUSA_BACKEND_URL environment variable? Note that the variable is no longer named NEXT_PUBLIC_MEDUSA_BACKEND_URL."
-    )
-  }
 
   if (
     !regionMap.keys().next().value ||
     regionMapUpdated < Date.now() - 3600 * 1000
   ) {
-    // Fetch regions from Medusa. We can't use the JS client here because middleware is running on Edge and the client needs a Node environment.
-    // const { regions } = await fetch(`${BACKEND_URL}/store/regions`, {
-    //   headers: {
-    //     "x-publishable-api-key": PUBLISHABLE_API_KEY!,
-    //   },
-    //   next: {
-    //     revalidate: 3600,
-    //     tags: [`regions-${cacheId}`],
-    //   },
-    //   cache: "force-cache",
-    // }).then(async (response) => {
-
-    //   // console.log("fetch regions Response >> ", response)
-    //   const json = await response.json()
-
-    //   // console.log("fetch regions Response json >> ", json)
-
-    //   if (!response.ok) {
-    //     throw new Error(json.message)
-    //   }
-
-    //   return json
-    // })
-
-    console.log("BACKEND URL >> ", BACKEND_URL)
-    console.log("PUBLISHABLE_API_KEY >> ", PUBLISHABLE_API_KEY)
-    console.log("BACKEND DEFAULT_REGION >> ", DEFAULT_REGION)
-
-    const res = await fetch(`${BACKEND_URL}/store/regions`, {
-      headers: {
-        "x-publishable-api-key": PUBLISHABLE_API_KEY!,
-      },
-      next: {
-        revalidate: 3600,
-        tags: [`regions-${cacheId}`],
-      },
-      cache: "force-cache",
-    })
-
-
-    console.log("fetch regions Response >> ", res)
-
-    console.log("Response Type >> ", typeof res)
-
-    const { regions } = await res.json()
+    
+    const { regions } = await fetchRegions(cacheId)
 
     if (!regions?.length) {
       throw new Error(
@@ -120,23 +90,40 @@ async function getCountryCode(
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error(
-        "Middleware.ts: Error getting the country code. Did you set up regions in your Medusa Admin and define a MEDUSA_BACKEND_URL environment variable? Note that the variable is no longer named NEXT_PUBLIC_MEDUSA_BACKEND_URL."
+        "Middleware.ts: Error getting the country code. Did you set up regions in your Medusa Admin and define a NEXT_PUBLIC_MEDUSA_BACKEND_URL environment variable?"
       )
     }
   }
 }
 
+async function setCacheId(request: NextRequest, response: NextResponse) {
+  const cacheId = request.nextUrl.searchParams.get("_medusa_cache_id")
+
+  if (cacheId) {
+    return cacheId
+  }
+
+  const newCacheId = crypto.randomUUID()
+  response.cookies.set("_medusa_cache_id", newCacheId, { maxAge: 60 * 60 * 24 })
+  return newCacheId
+}
+
 /**
- * Middleware to handle region selection and onboarding status.
+ * Middleware to handle region selection and cache id.
  */
 export async function middleware(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams
+  const cartId = searchParams.get("cart_id")
+  const checkoutStep = searchParams.get("step")
+  const cacheIdCookie = request.cookies.get("_medusa_cache_id")
+  const cartIdCookie = request.cookies.get("_medusa_cart_id")
+
   let redirectUrl = request.nextUrl.href
 
   let response = NextResponse.redirect(redirectUrl, 307)
 
-  let cacheIdCookie = request.cookies.get("_medusa_cache_id")
-
-  let cacheId = cacheIdCookie?.value || crypto.randomUUID()
+  // Set a cache id to invalidate the cache for this instance only
+  const cacheId = await setCacheId(request, response)
 
   const regionMap = await getRegionMap(cacheId)
 
@@ -145,18 +132,9 @@ export async function middleware(request: NextRequest) {
   const urlHasCountryCode =
     countryCode && request.nextUrl.pathname.split("/")[1].includes(countryCode)
 
-  // if one of the country codes is in the url and the cache id is set, return next
-  if (urlHasCountryCode && cacheIdCookie) {
+  // check if one of the country codes is in the url
+  if (urlHasCountryCode && (!cartId || cartIdCookie) && cacheIdCookie) {
     return NextResponse.next()
-  }
-
-  // if one of the country codes is in the url and the cache id is not set, set the cache id and redirect
-  if (urlHasCountryCode && !cacheIdCookie) {
-    response.cookies.set("_medusa_cache_id", cacheId, {
-      maxAge: 60 * 60 * 24,
-    })
-
-    return response
   }
 
   // check if the url is a static asset
@@ -173,6 +151,13 @@ export async function middleware(request: NextRequest) {
   if (!urlHasCountryCode && countryCode) {
     redirectUrl = `${request.nextUrl.origin}/${countryCode}${redirectPath}${queryString}`
     response = NextResponse.redirect(`${redirectUrl}`, 307)
+  }
+
+  // If a cart_id is in the params, we set it as a cookie and redirect to the address step.
+  if (cartId && !checkoutStep) {
+    redirectUrl = `${redirectUrl}&step=address`
+    response = NextResponse.redirect(`${redirectUrl}`, 307)
+    response.cookies.set("_medusa_cart_id", cartId, { maxAge: 60 * 60 * 24 })
   }
 
   return response
