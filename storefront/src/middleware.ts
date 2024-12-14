@@ -16,6 +16,7 @@ async function fetchRegions(cacheId: string) {
   const response = await fetch(`${BACKEND_URL}/store/regions`, {
     headers: {
       "x-publishable-api-key": PUBLISHABLE_API_KEY!,
+      'Content-Type': 'application/json',
     },
     next: {
       revalidate: 3600,
@@ -23,10 +24,12 @@ async function fetchRegions(cacheId: string) {
     },
   })
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch regions data : ${JSON.stringify(response)}`);
-  }
+  console.log('Response Status:', response.status);
+  console.log('Response Headers:', response.headers);
 
+  if (!response.ok) {
+    throw new Error(`API Error: ${response.statusText}`);
+  }
   return response.json()
 }
 
