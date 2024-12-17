@@ -164,7 +164,7 @@ export function CartProvider({
 
       })
     },
-    [setOptimisticCart, countryCode]
+    [setOptimisticCart]
   )
 
   // Rental Cart handler
@@ -268,7 +268,7 @@ export function CartProvider({
         })
       })
     },
-    [setOptimisticCart, countryCode]
+    [setOptimisticCart]
   )
 
   useEffect(() => {

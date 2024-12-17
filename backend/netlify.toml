@@ -1,6 +1,0 @@
-[build]
-  publish = "/.medusa"
-
-[[redirects]]
-  from = "/*"
-  to = "/server/public/admin/index.html"

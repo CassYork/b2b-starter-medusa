@@ -1,142 +1,13 @@
 import { HttpTypes } from "@medusajs/types"
 import { NextRequest, NextResponse } from "next/server"
 
-const BACKEND_URL = process.env.MEDUSA_BACKEND_URL
+const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL
 const PUBLISHABLE_API_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
 const DEFAULT_REGION = process.env.NEXT_PUBLIC_DEFAULT_REGION || "us"
 
 const regionMapCache = {
   regionMap: new Map<string, HttpTypes.StoreRegion>(),
   regionMapUpdated: Date.now(),
-}
-
-async function fetchRegions(cacheId: string) {
-  // Fetch regions from Medusa. We can't use the JS client here because middleware is running on Edge and the client needs a Node environment.
-
-  // const response = await fetch(`${BACKEND_URL}/store/regions`, {
-  //   headers: {
-  //     "x-publishable-api-key": PUBLISHABLE_API_KEY!,
-  //     'Content-Type': 'application/json',
-  //   },
-  //   next: {
-  //     revalidate: 3600,
-  //     tags: [`regions-${cacheId}`],
-  //   },
-  // })
-
-  // console.log('Response Status:', response.status);
-  // console.log('Response Headers:', response.headers);
-
-  // if (!response.ok) {
-  //   console.error('Error Response:', await response.text());
-  //   throw new Error(`API Error: ${response.statusText}`);
-  // }
-  // return response.json()
-
-  // TODO: FIX Direct IP access is not allowed in Vercel's Edge environment (hostname: BACKEND_URL)
-
-  return NextResponse.json({
-    regions: [
-      {
-        id: "reg_01JE7S0R4FVBDHVARVY46E1J1E",
-        name: "Europe",
-        currency_code: "eur",
-        created_at: "2024-12-04T02:47:04.117Z",
-        updated_at: "2024-12-04T02:47:04.117Z",
-        deleted_at: null,
-        metadata: null,
-        countries: [
-          {
-            iso_2: "de",
-            iso_3: "deu",
-            num_code: "276",
-            name: "GERMANY",
-            display_name: "Germany",
-            region_id: "reg_01JE7S0R4FVBDHVARVY46E1J1E",
-            metadata: null,
-            created_at: "2024-12-04T02:46:59.063Z",
-            updated_at: "2024-12-04T02:47:04.190Z",
-            deleted_at: null,
-          },
-          {
-            iso_2: "dk",
-            iso_3: "dnk",
-            num_code: "208",
-            name: "DENMARK",
-            display_name: "Denmark",
-            region_id: "reg_01JE7S0R4FVBDHVARVY46E1J1E",
-            metadata: null,
-            created_at: "2024-12-04T02:46:59.063Z",
-            updated_at: "2024-12-04T02:47:04.191Z",
-            deleted_at: null,
-          },
-          {
-            iso_2: "es",
-            iso_3: "esp",
-            num_code: "724",
-            name: "SPAIN",
-            display_name: "Spain",
-            region_id: "reg_01JE7S0R4FVBDHVARVY46E1J1E",
-            metadata: null,
-            created_at: "2024-12-04T02:46:59.064Z",
-            updated_at: "2024-12-04T02:47:04.191Z",
-            deleted_at: null,
-          },
-          {
-            iso_2: "fr",
-            iso_3: "fra",
-            num_code: "250",
-            name: "FRANCE",
-            display_name: "France",
-            region_id: "reg_01JE7S0R4FVBDHVARVY46E1J1E",
-            metadata: null,
-            created_at: "2024-12-04T02:46:59.063Z",
-            updated_at: "2024-12-04T02:47:04.191Z",
-            deleted_at: null,
-          },
-          {
-            iso_2: "gb",
-            iso_3: "gbr",
-            num_code: "826",
-            name: "UNITED KINGDOM",
-            display_name: "United Kingdom",
-            region_id: "reg_01JE7S0R4FVBDHVARVY46E1J1E",
-            metadata: null,
-            created_at: "2024-12-04T02:46:59.065Z",
-            updated_at: "2024-12-04T02:47:04.191Z",
-            deleted_at: null,
-          },
-          {
-            iso_2: "it",
-            iso_3: "ita",
-            num_code: "380",
-            name: "ITALY",
-            display_name: "Italy",
-            region_id: "reg_01JE7S0R4FVBDHVARVY46E1J1E",
-            metadata: null,
-            created_at: "2024-12-04T02:46:59.063Z",
-            updated_at: "2024-12-04T02:47:04.191Z",
-            deleted_at: null,
-          },
-          {
-            iso_2: "se",
-            iso_3: "swe",
-            num_code: "752",
-            name: "SWEDEN",
-            display_name: "Sweden",
-            region_id: "reg_01JE7S0R4FVBDHVARVY46E1J1E",
-            metadata: null,
-            created_at: "2024-12-04T02:46:59.064Z",
-            updated_at: "2024-12-04T02:47:04.191Z",
-            deleted_at: null,
-          },
-        ],
-      },
-    ],
-    count: 1,
-    offset: 0,
-    limit: 50,
-  })
 }
 
 async function getRegionMap(cacheId: string) {
@@ -146,9 +17,24 @@ async function getRegionMap(cacheId: string) {
     !regionMap.keys().next().value ||
     regionMapUpdated < Date.now() - 3600 * 1000
   ) {
-    const regRes = await fetchRegions(cacheId)
+    // Fetch regions from Medusa. We can't use the JS client here because middleware is running on Edge and the client needs a Node environment.
+    const { regions } = await fetch(`${BACKEND_URL}/store/regions`, {
+      headers: {
+        "x-publishable-api-key": PUBLISHABLE_API_KEY!,
+      },
+      next: {
+        revalidate: 3600,
+        tags: [`regions-${cacheId}`],
+      },
+    }).then(async (response) => {
+      const json = await response.json()
 
-    const { regions } = await regRes.json()
+      if (!response.ok) {
+        throw new Error(json.message)
+      }
+
+      return json
+    })
 
     if (!regions?.length) {
       throw new Error(
