@@ -59,7 +59,7 @@ export const setAuthToken = async (token: string) => {
     maxAge: 60 * 60 * 24 * 7,
     httpOnly: true,
     sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
+    // secure: process.env.NODE_ENV === "production",
   })
 }
 
@@ -83,7 +83,6 @@ export const setCartId = async (cartId: string) => {
     httpOnly: true,
     sameSite: "strict",
     // secure: process.env.NODE_ENV === "production"
-    secure: false,
   })
 }
 
