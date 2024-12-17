@@ -1,3 +1,5 @@
+version: "3.9" # Docker Compose file format version
+
 services:
   # Database service configuration
   db:
