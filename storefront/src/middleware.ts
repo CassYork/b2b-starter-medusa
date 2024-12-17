@@ -18,32 +18,135 @@ async function getRegionMap(cacheId: string) {
     regionMapUpdated < Date.now() - 3600 * 1000
   ) {
     // Fetch regions from Medusa. We can't use the JS client here because middleware is running on Edge and the client needs a Node environment.
-    const { regions } = await fetch(`${BACKEND_URL}/store/regions`, {
-      headers: {
-        "x-publishable-api-key": PUBLISHABLE_API_KEY!,
-      },
-      next: {
-        revalidate: 3600,
-        tags: [`regions-${cacheId}`],
-      },
-    }).then(async (response) => {
-      const json = await response.json()
+    // const { regions } = await fetch(`${BACKEND_URL}/store/regions`, {
+    //   headers: {
+    //     "x-publishable-api-key": PUBLISHABLE_API_KEY!,
+    //   },
+    //   next: {
+    //     revalidate: 3600,
+    //     tags: [`regions-${cacheId}`],
+    //   },
+    // }).then(async (response) => {
+    //   const json = await response.json()
 
-      if (!response.ok) {
-        throw new Error(json.message)
-      }
+    //   if (!response.ok) {
+    //     throw new Error(json.message)
+    //   }
 
-      return json
-    })
+    //   return json
+    // })
 
-    if (!regions?.length) {
+    const data: any = {
+      regions: [
+        {
+          id: "reg_01JF9JP5GH9EVS7B5B3ER9DR0H",
+          name: "Europe",
+          currency_code: "eur",
+          created_at: "2024-12-17T05:50:36.567Z",
+          updated_at: "2024-12-17T05:50:36.567Z",
+          deleted_at: null,
+          metadata: null,
+          countries: [
+            {
+              iso_2: "dk",
+              iso_3: "dnk",
+              num_code: "208",
+              name: "DENMARK",
+              display_name: "Denmark",
+              region_id: "reg_01JF9JP5GH9EVS7B5B3ER9DR0H",
+              metadata: null,
+              created_at: "2024-12-17T05:50:34.438Z",
+              updated_at: "2024-12-17T05:50:36.578Z",
+              deleted_at: null,
+            },
+            {
+              iso_2: "fr",
+              iso_3: "fra",
+              num_code: "250",
+              name: "FRANCE",
+              display_name: "France",
+              region_id: "reg_01JF9JP5GH9EVS7B5B3ER9DR0H",
+              metadata: null,
+              created_at: "2024-12-17T05:50:34.439Z",
+              updated_at: "2024-12-17T05:50:36.578Z",
+              deleted_at: null,
+            },
+            {
+              iso_2: "de",
+              iso_3: "deu",
+              num_code: "276",
+              name: "GERMANY",
+              display_name: "Germany",
+              region_id: "reg_01JF9JP5GH9EVS7B5B3ER9DR0H",
+              metadata: null,
+              created_at: "2024-12-17T05:50:34.439Z",
+              updated_at: "2024-12-17T05:50:36.577Z",
+              deleted_at: null,
+            },
+            {
+              iso_2: "it",
+              iso_3: "ita",
+              num_code: "380",
+              name: "ITALY",
+              display_name: "Italy",
+              region_id: "reg_01JF9JP5GH9EVS7B5B3ER9DR0H",
+              metadata: null,
+              created_at: "2024-12-17T05:50:34.440Z",
+              updated_at: "2024-12-17T05:50:36.578Z",
+              deleted_at: null,
+            },
+            {
+              iso_2: "es",
+              iso_3: "esp",
+              num_code: "724",
+              name: "SPAIN",
+              display_name: "Spain",
+              region_id: "reg_01JF9JP5GH9EVS7B5B3ER9DR0H",
+              metadata: null,
+              created_at: "2024-12-17T05:50:34.442Z",
+              updated_at: "2024-12-17T05:50:36.578Z",
+              deleted_at: null,
+            },
+            {
+              iso_2: "se",
+              iso_3: "swe",
+              num_code: "752",
+              name: "SWEDEN",
+              display_name: "Sweden",
+              region_id: "reg_01JF9JP5GH9EVS7B5B3ER9DR0H",
+              metadata: null,
+              created_at: "2024-12-17T05:50:34.442Z",
+              updated_at: "2024-12-17T05:50:36.578Z",
+              deleted_at: null,
+            },
+            {
+              iso_2: "gb",
+              iso_3: "gbr",
+              num_code: "826",
+              name: "UNITED KINGDOM",
+              display_name: "United Kingdom",
+              region_id: "reg_01JF9JP5GH9EVS7B5B3ER9DR0H",
+              metadata: null,
+              created_at: "2024-12-17T05:50:34.442Z",
+              updated_at: "2024-12-17T05:50:36.578Z",
+              deleted_at: null,
+            },
+          ],
+        },
+      ],
+      count: 1,
+      offset: 0,
+      limit: 50,
+    }
+
+    if (!data.regions?.length) {
       throw new Error(
         "No regions found. Please set up regions in your Medusa Admin."
       )
     }
 
     // Create a map of country codes to regions.
-    regions.forEach((region: HttpTypes.StoreRegion) => {
+    data.regions.forEach((region: HttpTypes.StoreRegion) => {
       region.countries?.forEach((c) => {
         regionMapCache.regionMap.set(c.iso_2 ?? "", region)
       })
