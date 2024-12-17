@@ -6,13 +6,15 @@ import { BaseCartLineItem } from "@medusajs/types/dist/http/cart/common"
 import { clx } from "@medusajs/ui"
 import ItemPreview from "@modules/cart/components/item-preview"
 import SkeletonLineItem from "@modules/skeletons/components/skeleton-line-item"
+import RentItemPreview from "../components/rent-item-preview"
 
 type ItemsTemplateProps = {
   items?: HttpTypes.StoreCartLineItem[] | HttpTypes.StoreOrderLineItem[]
+  rent_items?: any[]
   currencyCode: string
 }
 
-const ItemsPreviewTemplate = ({ items, currencyCode }: ItemsTemplateProps) => {
+const ItemsPreviewTemplate = ({ items, rent_items, currencyCode }: ItemsTemplateProps) => {
   const hasOverflow = items && items.length > 4
 
   return (
@@ -38,6 +40,25 @@ const ItemsPreviewTemplate = ({ items, currencyCode }: ItemsTemplateProps) => {
                         metadata?: { note?: string }
                       }
                     }
+                    showBorders={false}
+                  />
+                )
+              })
+          : repeat(5).map((i) => {
+              return <SkeletonLineItem key={i} />
+            })}
+
+        {rent_items
+          ? rent_items
+              .sort((a, b) => {
+                return (a.created_at ?? "") > (b.created_at ?? "") ? -1 : 1
+              })
+              .map((item) => {
+                return (
+                  <RentItemPreview
+                    key={item.id}
+                    currencyCode={currencyCode}
+                    item={item}
                     showBorders={false}
                   />
                 )

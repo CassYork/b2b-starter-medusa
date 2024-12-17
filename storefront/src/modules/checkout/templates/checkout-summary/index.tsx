@@ -16,6 +16,7 @@ const CheckoutSummary = async ({ cart }: { cart: B2BCart }) => {
     <Container className="sticky top-2 h-fit w-full flex flex-col small:mt-10">
       <ItemsPreviewTemplate
         items={cart?.items}
+        rent_items={cart?.rent_items || []}
         currencyCode={cart.currency_code}
       />
       <Divider className="my-2" />

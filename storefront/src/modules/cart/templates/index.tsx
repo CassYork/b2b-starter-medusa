@@ -10,6 +10,7 @@ import ItemsTemplate from "./items"
 import Summary from "./summary"
 import { useMemo } from "react"
 import AppliedPromotions from "../components/applied-promotions"
+import RentItemsTemplate from "./rent-items"
 
 const CartTemplate = ({ customer }: { customer: B2BCustomer | null }) => {
   const { cart } = useCart()
@@ -32,7 +33,7 @@ const CartTemplate = ({ customer }: { customer: B2BCustomer | null }) => {
   return (
     <div className="small:py-12 py-6 bg-neutral-100">
       <div className="content-container" data-testid="cart-container">
-        {cart?.items?.length ? (
+        {cart?.items?.length || cart?.rent_items?.length ? (
           <div>
             <div className="flex flex-col py-6 gap-y-6">
               <div className="pb-3 flex items-center">
@@ -44,7 +45,15 @@ const CartTemplate = ({ customer }: { customer: B2BCustomer | null }) => {
               <div className="grid grid-cols-1 small:grid-cols-[1fr_360px] gap-2">
                 <div className="flex flex-col gap-y-2">
                   {!customer && <SignInPrompt />}
-                  <ItemsTemplate cart={cart} />
+                  <ItemsTemplate cart={cart} showTotal={false} />
+
+                  {cart?.rent_items && cart.rent_items.length > 0 && (
+                    <RentItemsTemplate
+                      cart={cart}
+                      showBorders={false}
+                      showTotal={false}
+                    />
+                  )}
                 </div>
                 <div className="relative">
                   <div className="flex flex-col gap-y-8 sticky top-20">

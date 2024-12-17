@@ -103,6 +103,10 @@ const RentItemFull = ({ item, showBorders = true, currencyCode }: ItemProps) => 
               {item?.variant_title}
             </span>
 
+            <span className="text-neutral-600">
+              {item?.quantity}x
+            </span>
+
             <div className="flex gap-x-3 mt-2">
                 <Badge color="green" size="2xsmall">{item?.rent_duration}</Badge>
                 <Badge color="blue" size="2xsmall">{ format(new Date(item?.rent_date), 'PP')}</Badge>

@@ -168,7 +168,7 @@ const CartDrawer = ({ customer, ...props }: CartDrawerProps) => {
                     showTotal={false}
                   />
 
-                  {cart?.rent_items.length > 0 && (
+                  {cart?.rent_items && cart.rent_items.length > 0 && (
                     <RentItemsTemplate
                       cart={cart}
                       showBorders={false}

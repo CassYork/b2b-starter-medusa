@@ -343,6 +343,10 @@ export async function emptyCart() {
     await deleteLineItem(item.id)
   }
 
+  for (const rentTtem of cart?.rent_items || []) {
+    await deleteRentItem(rentTtem.id)
+  }
+
   const cartCacheTag = await getCacheTag("carts")
   revalidateTag(cartCacheTag)
 }
